@@ -30,3 +30,42 @@
 
 import UIKit
 
+class CopyStringActivity: UIActivity {
+  let colorDocument: ColorDocument
+  // 1
+  init(colorDocument: ColorDocument) {
+    self.colorDocument = colorDocument
+  }
+  override class var activityCategory: UIActivityCategory {
+    // 2
+    return .action
+  }
+  override var activityType: UIActivityType? {
+    // 3
+    return UIActivityType(rawValue: "ColorBrowserCopy")
+  }
+  // 4
+  override var activityTitle: String? {
+    return "Copy"
+  }
+  // 5
+  override var activityImage: UIImage? {
+    return UIImage(named: "copy_activity_icon")
+  }
+  // 6
+  override func canPerform(
+    withActivityItems activityItems: [Any]) -> Bool {
+    return true
+  }
+  // 7
+  override func perform() {
+    colorDocument.open { success in
+      if success {
+        UIPasteboard.general.string =
+          try! self.colorDocument.stringRepresentation()
+        self.activityDidFinish(true)
+      } }
+  }
+  
+}
+

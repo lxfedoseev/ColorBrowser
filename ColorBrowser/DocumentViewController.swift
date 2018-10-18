@@ -56,11 +56,49 @@ class DocumentViewController: UIViewController {
   }
   
   @IBAction func didTapSave(_ sender: Any) {
-    
+    guard let document = document  else {
+      return
+    }
+    // 1
+    document.color = RGBColor(R: Int(RSlider.value),
+                              G: Int(GSlider.value),
+                              B: Int(BSlider.value))
+                              // 2
+
+    document.save(to: document.fileURL, for: .forOverwriting)
+    { success in
+      // 3
+      if success {
+        self.showAlert(title: "Success", text: "Saved file")
+      } else {
+        self.showAlert(title: "Error",text: "Failed to save file")
+      }
+    }
   }
   
   @IBAction func didChangeSliderValue(_ sender: Any) {
     updateColorPreview(R: Int(RSlider.value), G: Int(GSlider.value), B: Int(BSlider.value))
+  }
+  
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    guard let document = document else {
+      return
+    }
+    // 1
+    if document.documentState == .normal {
+      updateUI()
+    } else {
+      // 2
+      document.open { success in
+        if success {
+          self.updateUI()
+        } else {
+          self.showAlert(title: "Error",
+                         text: "Can't open document")
+        } }
+    }
+    
   }
   
 }
@@ -80,4 +118,6 @@ private extension DocumentViewController {
       BSlider.value = Float(color.B)
     }
   }
+  
+  
 }

@@ -32,12 +32,121 @@ import UIKit
 
 class DocumentBrowserViewController: UIDocumentBrowserViewController {
   
+  var transitionController: UIDocumentBrowserTransitionController?
+  
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    delegate = self
+    allowsDocumentCreation = true
+    customizeBrowser()
+  }
+  
   func presentDocument(_ document: ColorDocument) {
     let storyBoard = UIStoryboard(name: "Main", bundle: nil)
     let documentViewController = storyBoard.instantiateViewController(withIdentifier: "DocumentViewController") as! DocumentViewController
     documentViewController.document = document
     
+    // 1
+    documentViewController.transitioningDelegate = self
+    // 2
+    transitionController = transitionController(
+      forDocumentURL: document.fileURL)
+    
     present(documentViewController, animated: true, completion: nil)
   }
   
+  func customizeBrowser() {
+    // 1
+    view.tintColor = UIColor(named: "MarineBlue")
+    // 2
+    browserUserInterfaceStyle = .light
+    // 3
+    let action = UIDocumentBrowserAction(
+      identifier: "com.razeware.action",
+      localizedTitle: "Lighter Color",
+      availability: .menu) { urls in
+        let colorDocument = ColorDocument(fileURL: urls[0])
+        colorDocument.open { success in
+          if success {
+            // 4
+            colorDocument.color =
+              colorDocument.color!.lighterColor(by: 60)
+            self.presentDocument(colorDocument)
+          }
+        } }
+    // 5
+    action.supportedContentTypes =
+      ["com.razeware.colorExtension"]
+    // 6
+    customActions = [action]
+    // 7
+    let aboutButton = UIBarButtonItem(
+      title: "About",
+      style: .plain,
+      target: self,
+      action: #selector(openAbout))
+    // 8
+    additionalTrailingNavigationBarButtonItems = [aboutButton]
+  }
+  @objc func openAbout() {
+    showAlert(title: "About", text: "ColorBrowser 1.0.0\n By Ray Wenderlich")
+  }
+  
 }
+
+extension DocumentBrowserViewController:
+UIDocumentBrowserViewControllerDelegate {
+  func documentBrowser(_ controller:
+    UIDocumentBrowserViewController,
+                       didRequestDocumentCreationWithHandler importHandler:
+    @escaping (URL?, UIDocumentBrowserViewController.ImportMode)
+    -> Void) {
+    // 1
+    let url = Bundle.main.url(forResource: "Untitled",withExtension: "color")
+      // 2
+      importHandler(url, .copy)
+  }
+  
+  // 1
+  func documentBrowser(_ controller: UIDocumentBrowserViewController,
+                       didImportDocumentAt sourceURL: URL,
+                       toDestinationURL destinationURL: URL) {
+    // 2
+    presentDocument(ColorDocument(fileURL: destinationURL))
+    
+  }
+  // 3
+  func documentBrowser(_ controller: UIDocumentBrowserViewController,
+                       failedToImportDocumentAt documentURL: URL,
+                       error: Error?) {
+    showAlert(title: "Failed", text: "Failed to import")
+  }
+  // 4
+  func documentBrowser(_ controller: UIDocumentBrowserViewController,
+                       didPickDocumentURLs documentURLs: [URL]) {
+    presentDocument(ColorDocument(fileURL: documentURLs[0]))
+  }
+  
+  func documentBrowser(_ controller:
+    UIDocumentBrowserViewController,
+                       applicationActivitiesForDocumentURLs
+    documentURLs: [URL]) -> [UIActivity] {
+    let colorDocument = ColorDocument(fileURL: documentURLs[0])
+    return [CopyStringActivity(colorDocument: colorDocument)]
+  }
+  
+}
+
+extension DocumentBrowserViewController:
+UIViewControllerTransitioningDelegate {
+  
+  func animationController(forPresented presented:
+    UIViewController, presenting: UIViewController,
+                      source: UIViewController)
+    -> UIViewControllerAnimatedTransitioning? {
+      return transitionController
+  }
+  
+}
+
+
